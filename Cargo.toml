@@ -2,6 +2,12 @@
 name = "diesel-libsql"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "Diesel ORM backend for libSQL (Turso) — local, remote, replicas, async, OpenTelemetry"
+repository = "https://github.com/yackey-labs/diesel-libsql"
+readme = "README.md"
+keywords = ["diesel", "libsql", "turso", "sqlite", "orm"]
+categories = ["database"]
 
 [dependencies]
 diesel = { version = "2.3", features = ["i-implement-a-third-party-backend-and-opt-into-breaking-changes", "sqlite"] }

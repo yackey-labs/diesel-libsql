@@ -435,4 +435,5 @@ impl diesel_async::AsyncConnection for AsyncLibSqlConnection {
     }
 }
 
+#[cfg(any(feature = "deadpool", feature = "bb8"))]
 impl diesel_async::pooled_connection::PoolableConnection for AsyncLibSqlConnection {}

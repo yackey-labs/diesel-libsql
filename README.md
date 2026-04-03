@@ -283,6 +283,15 @@ The async connection implements `diesel_async::AsyncConnection` natively -- quer
 
 This is a community-maintained crate. It is not an official project of [Diesel](https://diesel.rs) or [Turso](https://turso.tech). Bug reports and contributions are welcome via [GitHub issues](https://github.com/yackey-labs/diesel-libsql/issues).
 
+## Known issues
+
+Two low-severity vulnerabilities exist in transitive dependencies of the `libsql` crate (not in diesel-libsql itself). Both require upstream fixes in libsql:
+
+- `rustls-webpki` < 0.103.10 — CRL matching logic bug. Blocked on libsql updating its `rustls` dependency.
+- `libsql-sqlite3-parser` <= 0.13.0 — crash on invalid UTF-8. No patched version available yet.
+
+These affect remote/replica connections only (local file mode does not use rustls).
+
 ## License
 
-Licensed under either of [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0) or [MIT license](http://opensource.org/licenses/MIT) at your option.
+MIT — see [LICENSE](LICENSE).
