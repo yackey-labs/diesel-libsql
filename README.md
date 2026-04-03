@@ -228,6 +228,43 @@ conn.run_pending_migrations(MIGRATIONS)?;
 
 This is also the recommended pattern for production deployments -- migrations are compiled into your binary.
 
+### Production deployment strategies
+
+For remote Turso databases, you have flexibility in when and where migrations run:
+
+**Run at app startup** (simplest):
+```rust
+// In main(), before serving traffic
+conn.run_pending_migrations(MIGRATIONS)?;
+```
+
+**Run as a separate step** (recommended for Kubernetes):
+```yaml
+# k8s Job that runs before the Deployment rolls out
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+spec:
+  template:
+    spec:
+      containers:
+        - name: migrate
+          image: ghcr.io/your-org/your-app:latest
+          command: ["./your-app", "--migrate-only"]
+          env:
+            - name: LIBSQL_URL
+              value: "libsql://your-db.turso.io"
+            - name: LIBSQL_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: turso-creds
+                  key: token
+      restartPolicy: Never
+```
+
+This pattern lets you run migrations once before rolling out new pods, avoid migration races in multi-replica deployments, and roll back the deploy independently of the schema change.
+
 ## Encryption at rest
 
 Requires the `encryption` feature (and `cmake` at build time):
@@ -249,18 +286,25 @@ Attach `OtelInstrumentation` to emit spans for every query, connection, and tran
 use diesel_libsql::{LibSqlConnection, OtelInstrumentation};
 
 let mut conn = LibSqlConnection::establish(":memory:")?;
+
+// Safe default — operation name and timing only, no query text
 conn.set_instrumentation(OtelInstrumentation::new());
+
+// Opt-in to query text (dev/staging with secure trace backend only)
+conn.set_instrumentation(OtelInstrumentation::new().with_query_text(true));
 ```
 
 Spans follow [OTel database semantic conventions](https://opentelemetry.io/docs/specs/semconv/database/database-spans/):
 
-- `db.system = "sqlite"`
-- `db.query.text` -- the SQL query
-- `db.operation.name` -- `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `BEGIN`, `COMMIT`, `ROLLBACK`
-- `server.address` -- connection URL
-- `error.type` -- on failure
+| Attribute | Always | Opt-in |
+|---|---|---|
+| `db.system = "sqlite"` | Yes | |
+| `db.operation.name` | Yes | |
+| `server.address` | Yes (auth tokens redacted) | |
+| `error.type` | Yes (on failure) | |
+| `db.query.text` | | `with_query_text(true)` |
 
-Works with both sync `LibSqlConnection` and async `AsyncLibSqlConnection`.
+**Security**: `db.query.text` is off by default to avoid leaking table names, column names, or query structure into traces. Connection URLs are automatically redacted to strip auth tokens. Works with both sync and async connections.
 
 ## Feature flags
 

@@ -19,6 +19,12 @@ use opentelemetry::{
 /// Span names and attributes follow the
 /// [OTel database semantic conventions](https://opentelemetry.io/docs/specs/semconv/database/).
 ///
+/// # Query text safety
+///
+/// By default, `db.query.text` is **not** emitted to avoid leaking sensitive
+/// data (passwords, tokens, PII) in traces. Call [`with_query_text`](Self::with_query_text)
+/// to opt in — only do this if your traces go to a secure, access-controlled backend.
+///
 /// # Example
 ///
 /// ```rust,no_run
@@ -27,16 +33,40 @@ use opentelemetry::{
 ///
 /// let mut conn = LibSqlConnection::establish(":memory:")
 ///     .expect("Failed to connect");
+///
+/// // Safe default — no query text in spans
 /// conn.set_instrumentation(OtelInstrumentation::new());
+///
+/// // Opt-in to query text (for dev/staging with secure trace backend)
+/// conn.set_instrumentation(OtelInstrumentation::new().with_query_text(true));
 /// ```
 pub struct OtelInstrumentation {
     current_span: Option<opentelemetry::global::BoxedSpan>,
+    /// Whether to include `db.query.text` in spans. Default: false.
+    include_query_text: bool,
 }
 
 impl OtelInstrumentation {
     /// Create a new `OtelInstrumentation` instance.
+    ///
+    /// Query text is **not** included by default. Call [`with_query_text`](Self::with_query_text)
+    /// to enable it.
     pub fn new() -> Self {
-        Self { current_span: None }
+        Self {
+            current_span: None,
+            include_query_text: false,
+        }
+    }
+
+    /// Enable or disable `db.query.text` in spans.
+    ///
+    /// When enabled, the full SQL query (with bind parameter placeholders, not values)
+    /// is included in every query span. This is useful for debugging but may expose
+    /// table/column names or query structure. Only enable in environments where your
+    /// trace backend is access-controlled.
+    pub fn with_query_text(mut self, enabled: bool) -> Self {
+        self.include_query_text = enabled;
+        self
     }
 }
 
@@ -61,8 +91,11 @@ impl Instrumentation for OtelInstrumentation {
 
                 let mut span = tracer.start(format!("{} libsql", op_name));
                 span.set_attribute(KeyValue::new("db.system", "sqlite"));
-                span.set_attribute(KeyValue::new("db.query.text", query_text));
                 span.set_attribute(KeyValue::new("db.operation.name", op_name));
+
+                if self.include_query_text {
+                    span.set_attribute(KeyValue::new("db.query.text", query_text));
+                }
 
                 self.current_span = Some(span);
             }
@@ -82,7 +115,13 @@ impl Instrumentation for OtelInstrumentation {
             InstrumentationEvent::StartEstablishConnection { url, .. } => {
                 let mut span = tracer.start("db.connect");
                 span.set_attribute(KeyValue::new("db.system", "sqlite"));
-                span.set_attribute(KeyValue::new("server.address", url.to_string()));
+                // Redact auth tokens from connection URL
+                let safe_url = if let Some(idx) = url.find("authToken=") {
+                    format!("{}authToken=REDACTED", &url[..idx])
+                } else {
+                    url.to_string()
+                };
+                span.set_attribute(KeyValue::new("server.address", safe_url));
                 self.current_span = Some(span);
             }
             InstrumentationEvent::FinishEstablishConnection { error, .. } => {
