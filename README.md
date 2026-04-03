@@ -1,6 +1,8 @@
 # diesel-libsql
 
-A [Diesel](https://diesel.rs) ORM backend for [libSQL](https://turso.tech/libsql) -- Turso's SQLite-compatible database.
+> **Community project** -- not affiliated with or maintained by the [Diesel](https://diesel.rs) or [Turso/libSQL](https://turso.tech/libsql) teams.
+
+A Diesel ORM backend for libSQL -- Turso's SQLite-compatible database.
 
 Use Diesel's typed query builder, migrations, and connection management against local SQLite files, remote Turso databases, and embedded replicas. Supports both sync and native async, with OpenTelemetry instrumentation and connection pooling built in.
 
@@ -276,6 +278,10 @@ Works with both sync `LibSqlConnection` and async `AsyncLibSqlConnection`.
 diesel-libsql defines a new `LibSql` backend type for Diesel. It reuses Diesel's `SqliteType` for type metadata and generates identical SQL (backtick quoting, `?` bind params), but has its own value types (`LibSqlValue`, `LibSqlBindCollector`) that work with libsql's Rust API instead of the C SQLite API.
 
 The async connection implements `diesel_async::AsyncConnection` natively -- queries go directly through libsql's async methods with no sync bridge or `spawn_blocking`.
+
+## Status
+
+This is a community-maintained crate. It is not an official project of [Diesel](https://diesel.rs) or [Turso](https://turso.tech). Bug reports and contributions are welcome via [GitHub issues](https://github.com/yackey-labs/diesel-libsql/issues).
 
 ## License
 
