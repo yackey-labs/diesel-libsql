@@ -238,32 +238,31 @@ For remote Turso databases, you have flexibility in when and where migrations ru
 conn.run_pending_migrations(MIGRATIONS)?;
 ```
 
-**Run as a separate step** (recommended for Kubernetes):
+**Run as an init container** (recommended for Kubernetes):
 ```yaml
-# k8s Job that runs before the Deployment rolls out
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: migrate
+# Migrations run once before the app container starts.
+# In a multi-replica Deployment, each pod's init container runs
+# independently — run_pending_migrations is idempotent, so this is safe.
 spec:
-  template:
-    spec:
-      containers:
-        - name: migrate
-          image: ghcr.io/your-org/your-app:latest
-          command: ["./your-app", "--migrate-only"]
-          env:
-            - name: LIBSQL_URL
-              value: "libsql://your-db.turso.io"
-            - name: LIBSQL_AUTH_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: turso-creds
-                  key: token
-      restartPolicy: Never
+  initContainers:
+    - name: migrate
+      image: ghcr.io/your-org/your-app:latest
+      command: ["./your-app", "--migrate-only"]
+      env:
+        - name: LIBSQL_URL
+          value: "libsql://your-db.turso.io"
+        - name: LIBSQL_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: turso-creds
+              key: token
+  containers:
+    - name: app
+      image: ghcr.io/your-org/your-app:latest
+      # ...
 ```
 
-This pattern lets you run migrations once before rolling out new pods, avoid migration races in multi-replica deployments, and roll back the deploy independently of the schema change.
+Init containers guarantee migrations complete before your app serves traffic. For large or destructive migrations, you can also run them as a standalone k8s Job before triggering the Deployment rollout.
 
 ## Encryption at rest
 
@@ -287,24 +286,24 @@ use diesel_libsql::{LibSqlConnection, OtelInstrumentation};
 
 let mut conn = LibSqlConnection::establish(":memory:")?;
 
-// Safe default — operation name and timing only, no query text
+// Query text on by default (parameterized SQL only, no bind values)
 conn.set_instrumentation(OtelInstrumentation::new());
 
-// Opt-in to query text (dev/staging with secure trace backend only)
-conn.set_instrumentation(OtelInstrumentation::new().with_query_text(true));
+// Disable query text if you don't want table/column names in traces
+conn.set_instrumentation(OtelInstrumentation::new().with_query_text(false));
 ```
 
 Spans follow [OTel database semantic conventions](https://opentelemetry.io/docs/specs/semconv/database/database-spans/):
 
-| Attribute | Always | Opt-in |
+| Attribute | Default | Notes |
 |---|---|---|
-| `db.system = "sqlite"` | Yes | |
-| `db.operation.name` | Yes | |
-| `server.address` | Yes (auth tokens redacted) | |
-| `error.type` | Yes (on failure) | |
-| `db.query.text` | | `with_query_text(true)` |
+| `db.system = "sqlite"` | Always | |
+| `db.operation.name` | Always | `SELECT`, `INSERT`, etc. |
+| `db.query.text` | On | Parameterized SQL only (`WHERE name = ?`). Disable with `with_query_text(false)`. |
+| `server.address` | Always | Auth tokens automatically redacted |
+| `error.type` | On failure | |
 
-**Security**: `db.query.text` is off by default to avoid leaking table names, column names, or query structure into traces. Connection URLs are automatically redacted to strip auth tokens. Works with both sync and async connections.
+**Security**: `db.query.text` contains only parameterized SQL — bind parameter values are never included, only `?` placeholders. This is safe by default. Disable with `with_query_text(false)` if you don't want table/column names in traces. Connection URLs are automatically redacted to strip auth tokens. Works with both sync and async connections.
 
 ## Feature flags
 

@@ -21,9 +21,10 @@ use opentelemetry::{
 ///
 /// # Query text safety
 ///
-/// By default, `db.query.text` is **not** emitted to avoid leaking sensitive
-/// data (passwords, tokens, PII) in traces. Call [`with_query_text`](Self::with_query_text)
-/// to opt in — only do this if your traces go to a secure, access-controlled backend.
+/// By default, `db.query.text` is included in spans. This is safe because
+/// the query text contains only parameterized SQL with `?` placeholders —
+/// bind parameter values are never included. Call [`with_query_text(false)`](Self::with_query_text)
+/// to disable if you don't want table/column names visible in your traces.
 ///
 /// # Example
 ///
@@ -34,11 +35,11 @@ use opentelemetry::{
 /// let mut conn = LibSqlConnection::establish(":memory:")
 ///     .expect("Failed to connect");
 ///
-/// // Safe default — no query text in spans
+/// // Query text included by default (parameterized SQL only, no bind values)
 /// conn.set_instrumentation(OtelInstrumentation::new());
 ///
-/// // Opt-in to query text (for dev/staging with secure trace backend)
-/// conn.set_instrumentation(OtelInstrumentation::new().with_query_text(true));
+/// // Disable query text if you don't want table/column names in traces
+/// conn.set_instrumentation(OtelInstrumentation::new().with_query_text(false));
 /// ```
 pub struct OtelInstrumentation {
     current_span: Option<opentelemetry::global::BoxedSpan>,
@@ -49,21 +50,24 @@ pub struct OtelInstrumentation {
 impl OtelInstrumentation {
     /// Create a new `OtelInstrumentation` instance.
     ///
-    /// Query text is **not** included by default. Call [`with_query_text`](Self::with_query_text)
-    /// to enable it.
+    /// Query text is included by default. The text contains only parameterized
+    /// SQL with `?` placeholders — bind parameter values are never included.
+    /// Call [`with_query_text(false)`](Self::with_query_text) to disable if
+    /// you don't want table/column names in your traces.
     pub fn new() -> Self {
         Self {
             current_span: None,
-            include_query_text: false,
+            include_query_text: true,
         }
     }
 
     /// Enable or disable `db.query.text` in spans.
     ///
-    /// When enabled, the full SQL query (with bind parameter placeholders, not values)
-    /// is included in every query span. This is useful for debugging but may expose
-    /// table/column names or query structure. Only enable in environments where your
-    /// trace backend is access-controlled.
+    /// When enabled, the parameterized SQL is included in every query span
+    /// (e.g. `SELECT * FROM users WHERE name = ?`). Bind parameter **values**
+    /// are never included — only `?` placeholders appear. This may still
+    /// expose table/column names or query structure, so only enable in
+    /// environments where your trace backend is access-controlled.
     pub fn with_query_text(mut self, enabled: bool) -> Self {
         self.include_query_text = enabled;
         self
