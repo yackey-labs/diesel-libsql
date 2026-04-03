@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -Dwarnings
+
+jobs:
+  fmt:
+    name: Format
+    runs-on: arc-runner-set
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup component add rustfmt
+      - run: cargo fmt --check
+
+  clippy:
+    name: Clippy
+    runs-on: arc-runner-set
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup component add clippy
+      - run: cargo clippy --all-features -- -D warnings
+
+  test:
+    name: Test
+    runs-on: arc-runner-set
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo test --features "r2d2,async,otel"
+
+  test-pools:
+    name: Test (async pools)
+    runs-on: arc-runner-set
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo test --features "deadpool,bb8" --test async_local
+
+  doc:
+    name: Docs
+    runs-on: arc-runner-set
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo doc --all-features --no-deps
+        env:
+          RUSTDOCFLAGS: -Dwarnings
