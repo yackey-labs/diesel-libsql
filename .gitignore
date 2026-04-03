@@ -3,3 +3,6 @@
 *.swo
 .DS_Store
 .local-lib/
+architecture.md
+dependencies.md
+milestone-*.md

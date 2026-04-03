@@ -5,14 +5,12 @@ Diesel ORM backend for libSQL (Turso's SQLite-compatible database). Supports loc
 ## Build Commands
 
 - `cargo build` -- build the crate
-- `cargo build --features r2d2` -- build with connection pooling
-- `cargo build --features async` -- build with async support
-- `cargo build --features tracing` -- build with tracing instrumentation
-- `cargo test` -- run all local tests (8 tests, no external services)
-- `cargo test --features r2d2` -- run all tests including the pool test (9 tests)
-- `cargo test --features async` -- run async tests (3 tests)
-- `cargo test --features tracing` -- run tracing tests (1 test)
-- `cargo test --features "async,tracing,r2d2"` -- run all tests (13 tests)
+- `cargo build --features "r2d2,async,deadpool,bb8,otel"` -- build with all features
+- `cargo test` -- run local sync tests
+- `cargo test --features "r2d2,async,otel"` -- run all local tests (69 tests)
+- `cargo test --features "deadpool,bb8"` -- run async pool tests
+- `cargo test --test server --features async` -- run server tests (requires `turso dev --port 8081`)
+- `cargo tarpaulin --features "r2d2,async,otel" --exclude-files "tests/*" --skip-clean --test local --test async_local --test otel_test` -- coverage (75%)
 - `cargo clippy --all-features -- -D warnings` -- lint with all features
 - `cargo fmt --check` -- format check
 - `cargo doc --no-deps` -- build rustdoc
@@ -24,15 +22,17 @@ Diesel ORM backend for libSQL (Turso's SQLite-compatible database). Supports loc
 
 - `LibSql` backend type (separate from `diesel::sqlite::Sqlite`)
 - Reuses `SqliteType` for type metadata, custom `LibSqlQueryBuilder` for SQL generation
-- `LibSqlConnection` bridges libsql's async API to Diesel's sync `Connection` trait via tokio
+- `LibSqlConnection` (sync) bridges libsql's async API via tokio runtime
+- `AsyncLibSqlConnection` (async) uses libsql's native async API directly -- no spawn_blocking
 - `alter_column()` exposes libSQL-specific `ALTER TABLE ALTER COLUMN`
-- `establish_replica()` + `sync()` for embedded replicas
-- `r2d2` feature gate adds `LibSqlConnectionManager` for connection pooling
+- `establish_replica()` / `ReplicaBuilder` for embedded replicas with sync_interval and read_your_writes
+- `OtelInstrumentation` emits OpenTelemetry spans with database semantic conventions
+- Connection pooling: `r2d2` (sync), `deadpool` and `bb8` (async)
 
-## Key Conventions
+## Conventions
 
+- **Conventional commits** -- always use conventional commit format (`feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:`, `security:`)
 - All public types have rustdoc
-- Tests use `#[test]` (sync) -- the connection handles async bridging internally
-- Remote tests gated with `#[ignore]`
-- Feature flags: `r2d2` for connection pooling, `async` for diesel-async, `tracing` for OTel instrumentation
-- Do not modify existing src files beyond adding doc comments and feature gates
+- Sync tests use `#[test]`, async tests use `#[tokio::test]`
+- Remote/server tests gated with `#[ignore]` or require `turso dev` running
+- Feature flags: `r2d2`, `async`, `deadpool`, `bb8`, `otel`, `encryption`
