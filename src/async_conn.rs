@@ -356,10 +356,12 @@ impl diesel_async::AsyncConnectionCore for AsyncLibSqlConnection {
                                 match rows.next().await {
                                     Ok(Some(_)) => count += 1,
                                     Ok(None) => break Ok(count),
-                                    Err(e) => break Err(Error::DatabaseError(
-                                        DatabaseErrorKind::Unknown,
-                                        Box::new(e.to_string()),
-                                    )),
+                                    Err(e) => {
+                                        break Err(Error::DatabaseError(
+                                            DatabaseErrorKind::Unknown,
+                                            Box::new(e.to_string()),
+                                        ))
+                                    }
                                 }
                             }
                         }

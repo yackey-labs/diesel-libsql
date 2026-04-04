@@ -75,8 +75,7 @@ impl sql_dialect::returning_clause::SupportsReturningClause for LibSqlReturningC
 impl SqlDialect for LibSql {
     type ReturningClause = LibSqlReturningClause;
     type OnConflictClause = LibSqlOnConflictClause;
-    type InsertWithDefaultKeyword =
-        sql_dialect::default_keyword_for_insert::IsoSqlDefaultKeyword;
+    type InsertWithDefaultKeyword = sql_dialect::default_keyword_for_insert::IsoSqlDefaultKeyword;
     type BatchInsertSupport = LibSqlBatchInsert;
     type ConcatClause = sql_dialect::concat_clause::ConcatWithPipesClause;
     type DefaultValueClauseForInsert = sql_dialect::default_value_clause::AnsiDefaultValueClause;

@@ -101,19 +101,28 @@ fn extract_table_name(sql: &str) -> Option<&str> {
     // DELETE FROM <table>
     if let Some(pos) = trimmed.find("FROM ") {
         let after_from = &sql[pos + 5..];
-        return after_from.split_whitespace().next().map(|t| t.trim_matches('`'));
+        return after_from
+            .split_whitespace()
+            .next()
+            .map(|t| t.trim_matches('`'));
     }
 
     // INSERT INTO <table>
     if let Some(pos) = trimmed.find("INTO ") {
         let after_into = &sql[pos + 5..];
-        return after_into.split_whitespace().next().map(|t| t.trim_matches('`'));
+        return after_into
+            .split_whitespace()
+            .next()
+            .map(|t| t.trim_matches('`'));
     }
 
     // UPDATE <table>
     if trimmed.starts_with("UPDATE ") {
         let after_update = &sql[7..];
-        return after_update.split_whitespace().next().map(|t| t.trim_matches('`'));
+        return after_update
+            .split_whitespace()
+            .next()
+            .map(|t| t.trim_matches('`'));
     }
 
     None

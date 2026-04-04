@@ -316,23 +316,21 @@ impl LibSqlConnection {
                     // libsql's execute() rejects SELECT statements. Fall back to
                     // query() and return the row count. This happens when diesel's
                     // migration harness runs SELECT via execute_returning_count().
-                    let mut rows = self
-                        .connection
-                        .query(sql, params)
+                    let mut rows = self.connection.query(sql, params).await.map_err(|e| {
+                        Error::DatabaseError(DatabaseErrorKind::Unknown, Box::new(e.to_string()))
+                    })?;
+                    let mut count = 0usize;
+                    while rows
+                        .next()
                         .await
                         .map_err(|e| {
                             Error::DatabaseError(
                                 DatabaseErrorKind::Unknown,
                                 Box::new(e.to_string()),
                             )
-                        })?;
-                    let mut count = 0usize;
-                    while rows.next().await.map_err(|e| {
-                        Error::DatabaseError(
-                            DatabaseErrorKind::Unknown,
-                            Box::new(e.to_string()),
-                        )
-                    })?.is_some() {
+                        })?
+                        .is_some()
+                    {
                         count += 1;
                     }
                     Ok(count)
