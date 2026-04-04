@@ -1,6 +1,6 @@
 [package]
 name = "diesel-libsql"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 license = "MIT"
 description = "Diesel ORM backend for libSQL (Turso) — local, remote, replicas, async, OpenTelemetry"

@@ -1,3 +1,9 @@
+## 0.1.4 (2026-04-04)
+
+### Fixes
+
+- enable INSERT DEFAULT keyword support in SqlDialect
+
 ## 0.1.3 (2026-04-04)
 
 ### Fixes
