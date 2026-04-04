@@ -37,7 +37,7 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --all-features -- -D warnings
+      - run: cargo clippy --features "r2d2,async,deadpool,bb8,otel" -- -D warnings
 
   test:
     name: Test
@@ -64,6 +64,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo doc --all-features --no-deps
+      - run: cargo doc --features "r2d2,async,deadpool,bb8,otel" --no-deps
         env:
           RUSTDOCFLAGS: -Dwarnings

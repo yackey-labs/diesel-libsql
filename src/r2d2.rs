@@ -1,7 +1,7 @@
-//! Connection pool support via [`r2d2`].
+//! Connection pool support via `r2d2`.
 //!
-//! Enable the `r2d2` feature to use [`LibSqlConnectionManager`] with an
-//! [`r2d2::Pool`] for connection pooling.
+//! Enable the `r2d2` feature to use `LibSqlConnectionManager` with an
+//! `r2d2::Pool` for connection pooling.
 //!
 //! # Example
 //!

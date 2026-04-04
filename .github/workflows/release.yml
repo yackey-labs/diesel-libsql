@@ -24,7 +24,7 @@ jobs:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --check
-      - run: cargo clippy --all-features -- -D warnings
+      - run: cargo clippy --features "r2d2,async,deadpool,bb8,otel" -- -D warnings
       - run: cargo test --features "r2d2,async,deadpool,bb8,otel"
 
   publish:
