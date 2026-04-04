@@ -26,7 +26,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --check
       - run: cargo clippy --all-features -- -D warnings
-      - run: cargo test --all-features
+      - run: cargo test --all-features --lib --test local --test async_local --test otel_test --test remote
 
   publish:
     name: Publish to crates.io

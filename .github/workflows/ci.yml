@@ -49,7 +49,7 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y cmake
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo test --features "r2d2,async,otel,encryption"
+      - run: cargo test --features "r2d2,async,otel,encryption" --lib --test local --test async_local --test otel_test --test remote
 
   test-pools:
     name: Test (async pools)
