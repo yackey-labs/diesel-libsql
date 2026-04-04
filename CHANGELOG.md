@@ -1,3 +1,9 @@
+## 0.1.3 (2026-04-04)
+
+### Fixes
+
+- handle ExecuteReturnedRows, align OTel with semconv v1.34
+
 ## 0.1.2 (2026-04-04)
 
 ### Features
