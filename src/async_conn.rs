@@ -343,14 +343,37 @@ impl diesel_async::AsyncConnectionCore for AsyncLibSqlConnection {
                     &sql,
                 )));
 
-            let result = self
-                .connection
-                .execute(&sql, params)
-                .await
-                .map(|affected| affected as usize)
-                .map_err(|e| {
-                    Error::DatabaseError(DatabaseErrorKind::Unknown, Box::new(e.to_string()))
-                });
+            let result = match self.connection.execute(&sql, params.clone()).await {
+                Ok(affected) => Ok(affected as usize),
+                Err(libsql::Error::ExecuteReturnedRows) => {
+                    // libsql's execute() rejects SELECT statements. Fall back to
+                    // query() and return the row count. This happens when diesel's
+                    // migration harness runs SELECT via execute_returning_count().
+                    match self.connection.query(&sql, params).await {
+                        Ok(mut rows) => {
+                            let mut count = 0usize;
+                            loop {
+                                match rows.next().await {
+                                    Ok(Some(_)) => count += 1,
+                                    Ok(None) => break Ok(count),
+                                    Err(e) => break Err(Error::DatabaseError(
+                                        DatabaseErrorKind::Unknown,
+                                        Box::new(e.to_string()),
+                                    )),
+                                }
+                            }
+                        }
+                        Err(e) => Err(Error::DatabaseError(
+                            DatabaseErrorKind::Unknown,
+                            Box::new(e.to_string()),
+                        )),
+                    }
+                }
+                Err(e) => Err(Error::DatabaseError(
+                    DatabaseErrorKind::Unknown,
+                    Box::new(e.to_string()),
+                )),
+            };
 
             self.instrumentation
                 .on_connection_event(InstrumentationEvent::finish_query(

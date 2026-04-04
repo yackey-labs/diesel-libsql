@@ -309,13 +309,40 @@ impl LibSqlConnection {
     }
 
     fn execute_sql(&mut self, sql: &str, params: Vec<libsql::Value>) -> QueryResult<usize> {
-        let affected = self.runtime.block_on(async {
-            self.connection.execute(sql, params).await.map_err(|e| {
-                Error::DatabaseError(DatabaseErrorKind::Unknown, Box::new(e.to_string()))
-            })
-        })?;
-
-        Ok(affected as usize)
+        self.runtime.block_on(async {
+            match self.connection.execute(sql, params.clone()).await {
+                Ok(affected) => Ok(affected as usize),
+                Err(libsql::Error::ExecuteReturnedRows) => {
+                    // libsql's execute() rejects SELECT statements. Fall back to
+                    // query() and return the row count. This happens when diesel's
+                    // migration harness runs SELECT via execute_returning_count().
+                    let mut rows = self
+                        .connection
+                        .query(sql, params)
+                        .await
+                        .map_err(|e| {
+                            Error::DatabaseError(
+                                DatabaseErrorKind::Unknown,
+                                Box::new(e.to_string()),
+                            )
+                        })?;
+                    let mut count = 0usize;
+                    while rows.next().await.map_err(|e| {
+                        Error::DatabaseError(
+                            DatabaseErrorKind::Unknown,
+                            Box::new(e.to_string()),
+                        )
+                    })?.is_some() {
+                        count += 1;
+                    }
+                    Ok(count)
+                }
+                Err(e) => Err(Error::DatabaseError(
+                    DatabaseErrorKind::Unknown,
+                    Box::new(e.to_string()),
+                )),
+            }
+        })
     }
 }
 
