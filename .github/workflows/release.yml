@@ -2,76 +2,40 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*.*.*"
+    branches: [main]
 
-permissions:
-  contents: write
-  id-token: write
-
-env:
-  CARGO_TERM_COLOR: always
-  RUSTFLAGS: -Dwarnings
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  ci:
-    name: CI checks
+  release:
+    name: Release
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y cmake
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo fmt --check
-      - run: cargo clippy --all-features -- -D warnings
-      - run: cargo test --all-features --lib --test local --test async_local --test otel_test --test remote
-
-  publish:
-    name: Publish to crates.io
-    needs: ci
-    runs-on: ubuntu-latest
-    environment: crates-io
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo publish
-
-  github-release:
-    name: GitHub Release
-    needs: publish
-    runs-on: ubuntu-latest
-    env:
-      TAG_NAME: ${{ github.ref_name }}
+    if: "!startsWith(github.event.head_commit.message, 'chore:')"
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Generate release notes
-        id: notes
+          token: ${{ secrets.INFRA_DEPLOY_TOKEN }}
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install knope
         run: |
-          PREV_TAG=$(git tag --sort=-v:refname | head -2 | tail -1)
-          if [ -z "$PREV_TAG" ]; then
-            COMMITS=$(git log --oneline)
-          else
-            COMMITS=$(git log --oneline "$PREV_TAG"..HEAD)
-          fi
-          {
-            echo "NOTES<<EOF"
-            echo "## What's Changed"
-            echo ""
-            echo "$COMMITS" | sed 's/^/- /'
-            echo ""
-            echo "**Full Changelog**: https://github.com/yackey-labs/diesel-libsql/compare/${PREV_TAG:-initial}...$TAG_NAME"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-      - name: Create GitHub release
+          curl -sSL "https://github.com/knope-dev/knope/releases/latest/download/knope-x86_64-unknown-linux-musl.tgz" | tar xz --strip-components=1
+          mv knope /usr/local/bin/
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Release
+        run: knope release || echo "No unreleased changes"
         env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_NOTES: ${{ steps.notes.outputs.NOTES }}
-        run: |
-          gh release create "$TAG_NAME" \
-            --title "$TAG_NAME" \
-            --notes "$RELEASE_NOTES"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
