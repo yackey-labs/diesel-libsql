@@ -19,13 +19,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y cmake
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --check
-      - run: cargo clippy --features "r2d2,async,deadpool,bb8,otel" -- -D warnings
-      - run: cargo test --features "r2d2,async,deadpool,bb8,otel"
+      - run: cargo clippy --all-features -- -D warnings
+      - run: cargo test --all-features
 
   publish:
     name: Publish to crates.io

@@ -36,7 +36,7 @@
 //! | `deadpool`   | Async connection pooling via `deadpool` (implies `async`) |
 //! | `bb8`        | Async connection pooling via `bb8` (implies `async`) |
 //! | `otel`       | `OtelInstrumentation` for OpenTelemetry spans      |
-//! | `encryption` | AES-256 encryption at rest via `establish_encrypted`|
+//! | `encryption` | AES-256 encryption at rest via `establish_encrypted` (requires `cmake`) |
 
 mod backend;
 mod bind_collector;

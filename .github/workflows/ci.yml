@@ -16,6 +16,7 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -Dwarnings
+  ALL_FEATURES: r2d2,async,deadpool,bb8,otel,encryption
 
 jobs:
   fmt:
@@ -33,26 +34,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y cmake
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --features "r2d2,async,deadpool,bb8,otel" -- -D warnings
+      - run: cargo clippy --all-features -- -D warnings
 
   test:
     name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y cmake
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo test --features "r2d2,async,otel"
+      - run: cargo test --features "r2d2,async,otel,encryption"
 
   test-pools:
     name: Test (async pools)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y cmake
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --features "deadpool,bb8" --test async_local
@@ -62,8 +66,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y cmake
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo doc --features "r2d2,async,deadpool,bb8,otel" --no-deps
+      - run: cargo doc --all-features --no-deps
         env:
           RUSTDOCFLAGS: -Dwarnings
