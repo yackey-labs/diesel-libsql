@@ -1,3 +1,9 @@
+## 0.1.2 (2026-04-04)
+
+### Features
+
+- bump opentelemetry to 0.31, widen libsqlite3-sys range
+
 ## 0.1.1 (2026-04-04)
 
 ### Fixes
