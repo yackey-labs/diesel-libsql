@@ -14,7 +14,7 @@ diesel = { version = "2.3", features = ["i-implement-a-third-party-backend-and-o
 libsql = "0.9"
 tokio = { version = "1", features = ["rt-multi-thread"] }
 r2d2 = { version = "0.8", optional = true }
-diesel-async = { version = "0.8", optional = true }
+diesel-async = { version = "0.9", optional = true }
 futures-util = { version = "0.3", optional = true }
 opentelemetry = { version = "0.31", optional = true }
 
