@@ -40,8 +40,11 @@
 
 mod backend;
 mod bind_collector;
+#[cfg(feature = "chrono")]
+mod chrono_types;
 mod connection;
 mod from_sql;
+mod insert;
 mod query_builder;
 mod row;
 mod to_sql;

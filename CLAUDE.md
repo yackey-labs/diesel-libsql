@@ -7,7 +7,7 @@ Diesel ORM backend for libSQL (Turso's SQLite-compatible database). Supports loc
 - `cargo build` -- build the crate
 - `cargo build --features "r2d2,async,deadpool,bb8,otel"` -- build with all features
 - `cargo test` -- run local sync tests
-- `cargo test --features "r2d2,async,otel"` -- run all local tests (69 tests)
+- `cargo test --features "r2d2,async,otel,chrono"` -- run all local tests, including SQLite insert parity and chrono
 - `cargo test --features "deadpool,bb8"` -- run async pool tests
 - `cargo test --test server --features async` -- run server tests (requires `turso dev --port 8081`)
 - `cargo tarpaulin --features "r2d2,async,otel" --exclude-files "tests/*" --skip-clean --test local --test async_local --test otel_test` -- coverage (75%)
@@ -35,4 +35,5 @@ Diesel ORM backend for libSQL (Turso's SQLite-compatible database). Supports loc
 - All public types have rustdoc
 - Sync tests use `#[test]`, async tests use `#[tokio::test]`
 - Remote/server tests gated with `#[ignore]` or require `turso dev` running
-- Feature flags: `r2d2`, `async`, `deadpool`, `bb8`, `otel`, `encryption`
+- Feature flags: `r2d2`, `async`, `deadpool`, `bb8`, `otel`, `encryption`, `chrono`
+- Inserts follow Diesel's SQLite semantics (`src/insert.rs`): no `DEFAULT` keyword, row-by-row batches when rows omit different columns

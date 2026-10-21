@@ -315,6 +315,18 @@ Spans follow [OTel database semantic conventions](https://opentelemetry.io/docs/
 | `bb8` | Async pool via bb8 (implies `async`) | `bb8` |
 | `otel` | OpenTelemetry span instrumentation | `opentelemetry` |
 | `encryption` | AES-256 encryption at rest | `libsql/encryption` (needs `cmake`) |
+| `chrono` | `NaiveDate`, `NaiveTime`, `NaiveDateTime`, `DateTime<Utc/Local>` for `Date`, `Time`, `Timestamp`, `TimestamptzSqlite` | `chrono` |
+
+## SQLite-compatible inserts
+
+libSQL speaks SQLite's dialect, so inserts follow Diesel's SQLite backend rather than the SQL standard:
+
+- **Defaultable columns.** SQLite has no `DEFAULT` keyword inside `VALUES`, so `Option` fields that are `None` in an `Insertable` struct are left out of the statement and the column's SQL default applies.
+- **Batch inserts** (`insert_into(t).values(&vec)`) on `LibSqlConnection` run as one multi-row `INSERT ... VALUES (..), (..)` when every row binds the same columns. When rows leave out different defaultable columns, each row is inserted on its own inside a single transaction, so the batch is atomic either way. Batch inserts with `RETURNING`/`get_results` or `on_conflict`, and batch inserts on `AsyncLibSqlConnection`, are not supported yet.
+
+## chrono support
+
+With the `chrono` feature, dates and times are stored as TEXT in the same formats Diesel's SQLite backend uses (`%F`, `%T%.f`, `%F %T%.f`, `%F %T%.f%:z`). Every format Diesel's SQLite backend reads is accepted too, including SQLite julian-day numbers, so a database can be opened with either `diesel::sqlite` or `diesel-libsql`.
 
 ## How it works
 

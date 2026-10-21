@@ -75,7 +75,10 @@ impl sql_dialect::returning_clause::SupportsReturningClause for LibSqlReturningC
 impl SqlDialect for LibSql {
     type ReturningClause = LibSqlReturningClause;
     type OnConflictClause = LibSqlOnConflictClause;
-    type InsertWithDefaultKeyword = sql_dialect::default_keyword_for_insert::IsoSqlDefaultKeyword;
+    // SQLite (and therefore libSQL) has no DEFAULT keyword inside VALUES; defaultable columns are
+    // omitted instead (see `insert.rs`), matching Diesel's own SQLite backend.
+    type InsertWithDefaultKeyword =
+        sql_dialect::default_keyword_for_insert::DoesNotSupportDefaultKeyword;
     type BatchInsertSupport = LibSqlBatchInsert;
     type ConcatClause = sql_dialect::concat_clause::ConcatWithPipesClause;
     type DefaultValueClauseForInsert = sql_dialect::default_value_clause::AnsiDefaultValueClause;
