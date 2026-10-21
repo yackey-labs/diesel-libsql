@@ -96,3 +96,8 @@ impl SqlDialect for LibSql {
 
 impl DieselReserveSpecialization for LibSql {}
 impl TrustedBackend for LibSql {}
+
+/// Recursive CTE support via [`diesel-cte-ext`](https://crates.io/crates/diesel-cte-ext)
+/// (feature `cte-ext`): libSQL runs SQLite's `WITH RECURSIVE` unchanged.
+#[cfg(feature = "cte-ext")]
+impl diesel_cte_ext::RecursiveBackend for LibSql {}

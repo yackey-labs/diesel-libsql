@@ -442,11 +442,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "diesel-cte-ext"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73a43f0649e2f5b4b7fd8a7f4a94989c6675fa605fb5b750caaa1354b893e5ce"
+dependencies = [
+ "diesel",
+]
+
+[[package]]
 name = "diesel-libsql"
 version = "0.1.4"
 dependencies = [
  "diesel",
  "diesel-async",
+ "diesel-cte-ext",
  "diesel_migrations",
  "futures-util",
  "libsql",

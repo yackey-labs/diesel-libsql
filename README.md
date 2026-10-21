@@ -315,6 +315,7 @@ Spans follow [OTel database semantic conventions](https://opentelemetry.io/docs/
 | `bb8` | Async pool via bb8 (implies `async`) | `bb8` |
 | `otel` | OpenTelemetry span instrumentation | `opentelemetry` |
 | `encryption` | AES-256 encryption at rest | `libsql/encryption` (needs `cmake`) |
+| `cte-ext` | Recursive CTEs (`WITH RECURSIVE`) via `diesel-cte-ext` | `diesel-cte-ext` |
 
 ## How it works
 
